@@ -5,7 +5,7 @@ mcp-servers:
   custom-mcp:
     type: 'local'
     command: 'docker'
-    args: ['run', '--rm', '-i', '-v', '/home/runner/work/arm-migration-example/arm-migration-example:/workspace', '--name', 'arm-mcp', 'joestech324/mcp:arm-mcp-11']
+    args: ['run', '--rm', '-i', '-v', '/home/runner/work/arm-migration-example/arm-migration-example:/workspace', '--name', 'arm-mcp', 'armswdev/arm-mcp:latest']
     tools: ['skopeo', 'check_image', 'knowledge_base_search', 'migrate_ease_scan', 'mcp', 'sysreport_instructions']
 ---
 Your goal is to migrate a codebase from x86 to Arm. Use the mcp server tools to help you with this. Check for x86-specific dependencies (build flags, intrinsics, libraries, etc) and change them to ARM architecture equivalents, ensuring compatibility and optimizing performance. Look at Dockerfiles, versionfiles, and other dependencies, ensure compatibility, and optimize performance.
