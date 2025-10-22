@@ -12,9 +12,20 @@ WORKDIR /app
 # Copy the C++ source code
 COPY main.cpp .
 
-# Build the application without ARM-specific optimizations
-# Explicitly avoiding flags like -march=native, -mcpu, or ARM NEON intrinsics
-RUN g++ -O2 -o benchmark main.cpp -std=c++11
+# Build the application with architecture-specific optimizations
+# Detect architecture and apply appropriate flags
+RUN if [ "$(uname -m)" = "aarch64" ]; then \
+        g++ -O3 -march=armv8-a+simd+crypto+crc \
+            -mcpu=native -mtune=native \
+            -ffast-math -funroll-loops \
+            -fprefetch-loop-arrays \
+            -o benchmark main.cpp -std=c++11; \
+    else \
+        g++ -O3 -march=native -mtune=native \
+            -ffast-math -funroll-loops \
+            -fprefetch-loop-arrays \
+            -o benchmark main.cpp -std=c++11; \
+    fi
 
 # Create a startup script
 COPY start.sh .
