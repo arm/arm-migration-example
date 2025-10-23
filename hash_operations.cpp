@@ -36,9 +36,11 @@ unsigned long long compute_hash(const char* data, size_t len) {
     for (; i + 16 <= len; i += 16) {
         uint8x16_t chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(data + i));
         
-        // Process each byte from the NEON vector
+        // Store vector to array and process bytes
+        uint8_t chunk_bytes[16];
+        vst1q_u8(chunk_bytes, chunk);
         for (int j = 0; j < 16; j++) {
-            unsigned char byte = vgetq_lane_u8(chunk, j);
+            unsigned char byte = chunk_bytes[j];
             hash = ((hash << 5) + hash) + byte;
         }
     }
