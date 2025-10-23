@@ -16,7 +16,7 @@ COPY *.h ./
 COPY *.cpp ./
 
 # Build the application with optimizations
-# SSE2 intrinsics are used in the code for x86-64 platforms
+# The code now supports both x86-64 (SSE2) and ARM64 (NEON) optimizations
 RUN g++ -O2 -o benchmark \
     main.cpp \
     matrix_operations.cpp \
