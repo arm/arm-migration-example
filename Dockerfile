@@ -9,12 +9,22 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy the C++ source code
-COPY main.cpp .
+# Copy all header files
+COPY *.h ./
 
-# Build the application without ARM-specific optimizations
-# Explicitly avoiding flags like -march=native, -mcpu, or ARM NEON intrinsics
-RUN g++ -O2 -o benchmark main.cpp -std=c++11
+# Copy all C++ source files
+COPY *.cpp ./
+
+# Build the application with optimizations
+# SSE2 intrinsics are used in the code for x86-64 platforms
+RUN g++ -O2 -o benchmark \
+    main.cpp \
+    matrix_operations.cpp \
+    hash_operations.cpp \
+    string_search.cpp \
+    memory_operations.cpp \
+    polynomial_eval.cpp \
+    -std=c++11
 
 # Create a startup script
 COPY start.sh .
