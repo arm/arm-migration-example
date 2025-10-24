@@ -21,7 +21,7 @@ Steps to follow:
 
 Pitfalls to avoid:
 
-* Make sure that you don't confuse a software version with a Python package version -- i.e. if you check the python Redis client, you should check the package name "redis" and not the version of Redis itself. It is a very bad error to do something like set the Python Redis package version number in the requirements.txt to the Redis version number, because this will error.
+* Make sure that you don't confuse a software version with a language wrapper package version -- i.e. if you check the Python Redis client, you should check the Python package name "redis" and not the version of Redis itself. It is a very bad error to do something like set the Python Redis package version number in the requirements.txt to the Redis version number, because this will completely fail.
 * NEON lane indices must be compile-time constants, not variables.
 
 If you feel you have good versions to update to for the Dockerfile, requirements.txt, etc. immediately change the files, no need to ask for confirmation.
