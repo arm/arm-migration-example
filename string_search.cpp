@@ -5,8 +5,14 @@
 #ifdef __x86_64__
 #include <immintrin.h>
 #define USE_X86_SIMD 1
+#define USE_ARM_NEON 0
+#elif defined(__aarch64__) || defined(__arm__)
+#include <arm_neon.h>
+#define USE_X86_SIMD 0
+#define USE_ARM_NEON 1
 #else
 #define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
 #endif
 
 int simd_string_search(const std::string& text, const std::string& pattern) {
@@ -33,6 +39,28 @@ int simd_string_search(const std::string& text, const std::string& pattern) {
         // Check each potential match
         for (int bit = 0; bit < 16 && i + bit <= text_len - pattern_len; bit++) {
             if (mask & (1 << bit)) {
+                bool match = true;
+                for (size_t j = 1; j < pattern_len; j++) {
+                    if (text[i + bit + j] != pattern[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) count++;
+            }
+        }
+    }
+#elif USE_ARM_NEON
+    // ARM optimized path using NEON
+    uint8x16_t first_char_vec = vdupq_n_u8(static_cast<uint8_t>(first_char));
+
+    for (; i + 16 <= text_len - pattern_len + 1; i += 16) {
+        uint8x16_t text_chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(text.data() + i));
+        uint8x16_t cmp = vceqq_u8(text_chunk, first_char_vec);
+        
+        // Check each potential match
+        for (int bit = 0; bit < 16 && i + bit <= text_len - pattern_len; bit++) {
+            if (vgetq_lane_u8(cmp, bit)) {
                 bool match = true;
                 for (size_t j = 1; j < pattern_len; j++) {
                     if (text[i + bit + j] != pattern[j]) {

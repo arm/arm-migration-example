@@ -7,8 +7,14 @@
 #ifdef __x86_64__
 #include <immintrin.h>
 #define USE_X86_SIMD 1
+#define USE_ARM_NEON 0
+#elif defined(__aarch64__) || defined(__arm__)
+#include <arm_neon.h>
+#define USE_X86_SIMD 0
+#define USE_ARM_NEON 1
 #else
 #define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
 #endif
 
 unsigned long long compute_hash(const char* data, size_t len) {
@@ -28,6 +34,17 @@ unsigned long long compute_hash(const char* data, size_t len) {
             } else {
                 byte = (byte >> 8) & 0xFF;
             }
+            hash = ((hash << 5) + hash) + byte;
+        }
+    }
+#elif USE_ARM_NEON
+    // ARM optimized path using NEON
+    for (; i + 16 <= len; i += 16) {
+        uint8x16_t chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(data + i));
+
+        // Extract bytes and update hash
+        for (int j = 0; j < 16; j++) {
+            unsigned char byte = vgetq_lane_u8(chunk, j);
             hash = ((hash << 5) + hash) + byte;
         }
     }

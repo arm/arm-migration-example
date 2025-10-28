@@ -16,7 +16,7 @@ COPY *.h ./
 COPY *.cpp ./
 
 # Build the application with optimizations
-# SSE2 intrinsics are used in the code for x86-64 platforms
+# SIMD intrinsics (SSE2 for x86-64, NEON for ARM) are automatically selected based on architecture
 RUN g++ -O2 -o benchmark \
     main.cpp \
     matrix_operations.cpp \

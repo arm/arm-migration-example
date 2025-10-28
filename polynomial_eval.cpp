@@ -5,8 +5,14 @@
 #ifdef __x86_64__
 #include <immintrin.h>
 #define USE_X86_SIMD 1
+#define USE_ARM_NEON 0
+#elif defined(__aarch64__) || defined(__arm__)
+#include <arm_neon.h>
+#define USE_X86_SIMD 0
+#define USE_ARM_NEON 1
 #else
 #define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
 #endif
 
 double polynomial_eval_sse(double x, const std::vector<double>& coeffs) {
@@ -37,6 +43,30 @@ double polynomial_eval_sse(double x, const std::vector<double>& coeffs) {
         double power_arr[2];
         _mm_storeu_pd(power_arr, power_vec);
         result += coeffs[i] * power_arr[0];
+    }
+
+    return result;
+#elif USE_ARM_NEON
+    // ARM optimized path using NEON
+    float64x2_t result_vec = vdupq_n_f64(0.0);
+    float64x2_t power_vec = {1.0, x};  // [1.0, x]
+    float64x2_t power_mult = vdupq_n_f64(x * x);
+
+    size_t i = 0;
+
+    // Process 2 coefficients at a time
+    for (; i + 1 < coeffs.size(); i += 2) {
+        float64x2_t coeff_vec = {coeffs[i], coeffs[i + 1]};
+        result_vec = vfmaq_f64(result_vec, coeff_vec, power_vec);
+        power_vec = vmulq_f64(power_vec, power_mult);
+    }
+
+    // Horizontal add
+    double result = vaddvq_f64(result_vec);
+
+    // Handle remaining coefficient
+    if (i < coeffs.size()) {
+        result += coeffs[i] * vgetq_lane_f64(power_vec, 0);
     }
 
     return result;
