@@ -58,9 +58,13 @@ int simd_string_search(const std::string& text, const std::string& pattern) {
         uint8x16_t text_chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(text.data() + i));
         uint8x16_t cmp = vceqq_u8(text_chunk, first_char_vec);
         
+        // Store comparison result to array
+        alignas(16) uint8_t cmp_result[16];
+        vst1q_u8(cmp_result, cmp);
+        
         // Check each potential match
         for (int bit = 0; bit < 16 && i + bit <= text_len - pattern_len; bit++) {
-            if (vgetq_lane_u8(cmp, bit)) {
+            if (cmp_result[bit]) {
                 bool match = true;
                 for (size_t j = 1; j < pattern_len; j++) {
                     if (text[i + bit + j] != pattern[j]) {
