@@ -1,6 +1,6 @@
 /*
  * High-Performance Compute Benchmark Suite
- * Optimized for x86-64 architecture with SSE/AVX SIMD instructions
+ * Optimized for x86-64 and ARM64 architectures with SIMD instructions
  */
 
 #include <iostream>
@@ -12,8 +12,13 @@
 
 #ifdef __x86_64__
 #define USE_X86_SIMD 1
+#define USE_ARM_NEON 0
+#elif defined(__aarch64__) || defined(__ARM_NEON)
+#define USE_X86_SIMD 0
+#define USE_ARM_NEON 1
 #else
 #define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
 #endif
 
 int main() {
@@ -21,9 +26,10 @@ int main() {
     std::cout << "  Compute Benchmark Suite" << std::endl;
 #if USE_X86_SIMD
     std::cout << "  x86-64 with SSE2 Optimizations" << std::endl;
+#elif USE_ARM_NEON
+    std::cout << "  ARM64 with NEON Optimizations" << std::endl;
 #else
     std::cout << "  Generic Build (No SIMD)" << std::endl;
-    std::cout << "  NOTE: This code is optimized for x86-64" << std::endl;
 #endif
     std::cout << "========================================" << std::endl;
 
