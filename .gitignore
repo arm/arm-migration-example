@@ -1,0 +1,18 @@
+# Build artifacts
+benchmark
+*.o
+*.out
+*.exe
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# MCP invocation tracking
+invocation_reasons.yaml
