@@ -4,11 +4,17 @@
 #include <chrono>
 #include <iomanip>
 
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__amd64__)
 #include <immintrin.h>
 #define USE_X86_SIMD 1
+#define USE_ARM_NEON 0
+#elif defined(__aarch64__) || defined(__ARM_NEON)
+#include <arm_neon.h>
+#define USE_X86_SIMD 0
+#define USE_ARM_NEON 1
 #else
 #define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
 #endif
 
 unsigned long long compute_hash(const char* data, size_t len) {
@@ -31,9 +37,20 @@ unsigned long long compute_hash(const char* data, size_t len) {
             hash = ((hash << 5) + hash) + byte;
         }
     }
+#elif USE_ARM_NEON
+    // ARM64 optimized path using NEON
+    for (; i + 16 <= len; i += 16) {
+        uint8x16_t chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(data + i));
+
+        // Extract bytes and update hash
+        for (int j = 0; j < 16; j++) {
+            unsigned char byte = vgetq_lane_u8(chunk, j);
+            hash = ((hash << 5) + hash) + byte;
+        }
+    }
 #endif
 
-    // Process remaining bytes (or all bytes on non-x86)
+    // Process remaining bytes (or all bytes on non-SIMD platforms)
     for (; i < len; i++) {
         hash = ((hash << 5) + hash) + data[i];
     }

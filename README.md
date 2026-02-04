@@ -1,6 +1,6 @@
 # Compute Benchmark Suite
 
-A high-performance compute benchmark application optimized for x86-64 architecture with SSE2 SIMD instructions.
+A high-performance compute benchmark application optimized for both x86-64 and ARM64 architectures with SIMD instructions.
 
 ## Overview
 
@@ -11,7 +11,9 @@ This benchmark suite tests various compute-intensive operations including:
 - Memory operations (50MB copy operations)
 - Polynomial evaluation (10M iterations)
 
-The code is optimized using x86 SSE2 SIMD intrinsics for maximum performance on Intel and AMD processors.
+The code is optimized using:
+- **x86-64**: SSE2 SIMD intrinsics for Intel and AMD processors
+- **ARM64**: NEON SIMD intrinsics for ARM processors
 
 ## Building with Docker
 
@@ -33,16 +35,18 @@ This will execute all benchmark tests and display timing results for each operat
 
 ## Architecture Notes
 
-- **Optimized for**: x86-64 architecture with SSE2 support
-- **SIMD Instructions**: Uses SSE2 intrinsics (`__m128d`, `__m128i`) for vectorized operations
-- **Fallback**: Includes scalar fallback implementation for non-x86 platforms
+- **x86-64**: Uses SSE2 intrinsics (`__m128d`, `__m128i`) for vectorized operations
+- **ARM64**: Uses NEON intrinsics (`float64x2_t`, `uint8x16_t`) for vectorized operations
+- **Fallback**: Includes scalar fallback implementation for other platforms
+
+The code automatically detects the architecture at compile time and uses the appropriate SIMD instructions.
 
 ## Output Example
 
 ```
 ========================================
   Compute Benchmark Suite
-  x86-64 with SSE2 Optimizations
+  ARM64 with NEON Optimizations
 ========================================
 
 === Matrix Multiplication Benchmark ===
@@ -69,4 +73,4 @@ The benchmark suite is organized into separate modules:
 - `memory_operations.{h,cpp}` - Fast memory copy operations
 - `polynomial_eval.{h,cpp}` - Vectorized polynomial evaluation
 
-Each module uses C++11 standard library and x86 SSE2 intrinsics where applicable.
+Each module uses C++11 standard library with architecture-specific SIMD intrinsics (SSE2 for x86-64, NEON for ARM64) where applicable.
