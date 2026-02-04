@@ -26,15 +26,12 @@ unsigned long long compute_hash(const char* data, size_t len) {
     for (; i + 16 <= len; i += 16) {
         __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + i));
 
-        // Extract bytes and update hash
+        // Store to array and extract bytes
+        alignas(16) unsigned char bytes[16];
+        _mm_store_si128(reinterpret_cast<__m128i*>(bytes), chunk);
+        
         for (int j = 0; j < 16; j++) {
-            unsigned char byte = _mm_extract_epi16(chunk, j / 2);
-            if (j % 2 == 0) {
-                byte = byte & 0xFF;
-            } else {
-                byte = (byte >> 8) & 0xFF;
-            }
-            hash = ((hash << 5) + hash) + byte;
+            hash = ((hash << 5) + hash) + bytes[j];
         }
     }
 #elif USE_ARM_NEON
@@ -42,10 +39,12 @@ unsigned long long compute_hash(const char* data, size_t len) {
     for (; i + 16 <= len; i += 16) {
         uint8x16_t chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(data + i));
 
-        // Extract bytes and update hash
+        // Store to array and extract bytes  
+        alignas(16) unsigned char bytes[16];
+        vst1q_u8(bytes, chunk);
+        
         for (int j = 0; j < 16; j++) {
-            unsigned char byte = vgetq_lane_u8(chunk, j);
-            hash = ((hash << 5) + hash) + byte;
+            hash = ((hash << 5) + hash) + bytes[j];
         }
     }
 #endif
