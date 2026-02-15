@@ -1,0 +1,20 @@
+---
+id: 3eac6e13-0397-4179-9ce2-3a023cec332e
+timestamp: '2025-10-23T15:29:14.681432+00:00'
+tool: check_image
+args:
+  image: ubuntu:22.04
+reason: Checking if the base Ubuntu 22.04 image supports ARM64 architecture before
+  migrating the Dockerfile
+---
+id: 7cb2bd99-a163-4bd9-99eb-37a3fa8cc29e
+timestamp: '2025-10-23T15:29:15.052171+00:00'
+tool: migrate_ease_scan
+args:
+  scanner: cpp
+  arch: armv8-a
+  git_repo: null
+  output_format: json
+  extra_args: null
+reason: Scanning the C++ codebase to identify x86-specific code that needs to be migrated
+  to ARM architecture

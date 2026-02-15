@@ -1,6 +1,6 @@
 # Compute Benchmark Suite
 
-A high-performance compute benchmark application optimized for x86-64 architecture with SSE2 SIMD instructions.
+A high-performance compute benchmark application optimized for both x86-64 and ARM64 architectures with SIMD instructions.
 
 ## Overview
 
@@ -11,7 +11,7 @@ This benchmark suite tests various compute-intensive operations including:
 - Memory operations (50MB copy operations)
 - Polynomial evaluation (10M iterations)
 
-The code is optimized using x86 SSE2 SIMD intrinsics for maximum performance on Intel and AMD processors.
+The code includes optimizations using both x86 SSE2 and ARM NEON SIMD intrinsics for maximum performance on Intel, AMD, and ARM processors.
 
 ## Building with Docker
 
@@ -33,9 +33,11 @@ This will execute all benchmark tests and display timing results for each operat
 
 ## Architecture Notes
 
-- **Optimized for**: x86-64 architecture with SSE2 support
-- **SIMD Instructions**: Uses SSE2 intrinsics (`__m128d`, `__m128i`) for vectorized operations
-- **Fallback**: Includes scalar fallback implementation for non-x86 platforms
+- **Optimized for**: x86-64 architecture with SSE2 support and ARM64 architecture with NEON support
+- **SIMD Instructions**: 
+  - Uses SSE2 intrinsics (`__m128d`, `__m128i`) for vectorized operations on x86-64
+  - Uses NEON intrinsics (`float64x2_t`, `uint8x16_t`) for vectorized operations on ARM64
+- **Fallback**: Includes scalar fallback implementation for other platforms
 
 ## Output Example
 
@@ -69,4 +71,4 @@ The benchmark suite is organized into separate modules:
 - `memory_operations.{h,cpp}` - Fast memory copy operations
 - `polynomial_eval.{h,cpp}` - Vectorized polynomial evaluation
 
-Each module uses C++11 standard library and x86 SSE2 intrinsics where applicable.
+Each module uses C++11 standard library and includes both x86 SSE2 intrinsics and ARM NEON intrinsics where applicable.

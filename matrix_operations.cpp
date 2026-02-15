@@ -4,11 +4,15 @@
 #include <chrono>
 #include <stdexcept>
 
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(_M_X64)
 #include <immintrin.h>
 #define USE_X86_SIMD 1
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#include <arm_neon.h>
+#define USE_ARM_NEON 1
 #else
 #define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
 #endif
 
 Matrix::Matrix(size_t r, size_t c) : rows(r), cols(c) {
@@ -52,6 +56,32 @@ Matrix Matrix::multiply(const Matrix& other) const {
             double sum_arr[2];
             _mm_storeu_pd(sum_arr, sum_vec);
             double sum = sum_arr[0] + sum_arr[1];
+
+            // Handle remaining element
+            if (k < cols) {
+                sum += data[i][k] * other.data[k][j];
+            }
+
+            result.data[i][j] = sum;
+        }
+    }
+#elif USE_ARM_NEON
+    // ARM64 optimized path using NEON
+    for (size_t i = 0; i < rows; i++) {
+        for (size_t j = 0; j < other.cols; j++) {
+            float64x2_t sum_vec = vdupq_n_f64(0.0);
+            size_t k = 0;
+
+            // Process 2 elements at a time with NEON
+            for (; k + 1 < cols; k += 2) {
+                float64x2_t a_vec = vld1q_f64(&data[i][k]);
+                double b_vals[2] = {other.data[k][j], other.data[k+1][j]};
+                float64x2_t b_vec = vld1q_f64(b_vals);
+                sum_vec = vfmaq_f64(sum_vec, a_vec, b_vec);
+            }
+
+            // Horizontal add
+            double sum = vgetq_lane_f64(sum_vec, 0) + vgetq_lane_f64(sum_vec, 1);
 
             // Handle remaining element
             if (k < cols) {
