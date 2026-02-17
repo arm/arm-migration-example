@@ -15,8 +15,8 @@ COPY *.h ./
 # Copy all C++ source files
 COPY *.cpp ./
 
-# Build the application with optimizations
-# SSE2 intrinsics are used in the code for x86-64 platforms
+# Build the application with optimizations for the target architecture
+# Supports both x86-64 (with SSE2) and ARM64 (with NEON) architectures
 RUN g++ -O2 -o benchmark \
     main.cpp \
     matrix_operations.cpp \
@@ -24,7 +24,8 @@ RUN g++ -O2 -o benchmark \
     string_search.cpp \
     memory_operations.cpp \
     polynomial_eval.cpp \
-    -std=c++11
+    -std=c++11 \
+    -march=native
 
 # Create a startup script
 COPY start.sh .

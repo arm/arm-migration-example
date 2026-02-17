@@ -1,0 +1,14 @@
+# Build artifacts
+benchmark
+*.o
+*.out
+
+# Temporary files
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.iml
