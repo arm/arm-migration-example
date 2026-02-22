@@ -4,11 +4,14 @@
 #include <chrono>
 #include <iomanip>
 
-#ifdef __x86_64__
+#if defined(__x86_64__)
 #include <immintrin.h>
 #define USE_X86_SIMD 1
+#elif defined(__aarch64__)
+#include <arm_neon.h>
+#define USE_ARM_NEON 1
 #else
-#define USE_X86_SIMD 0
+#define USE_SCALAR 1
 #endif
 
 unsigned long long compute_hash(const char* data, size_t len) {
@@ -30,6 +33,29 @@ unsigned long long compute_hash(const char* data, size_t len) {
             }
             hash = ((hash << 5) + hash) + byte;
         }
+    }
+#elif USE_ARM_NEON
+    // ARM64 optimized path using NEON
+    for (; i + 16 <= len; i += 16) {
+        uint8x16_t chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(data + i));
+
+        // Extract bytes and update hash
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 0);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 1);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 2);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 3);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 4);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 5);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 6);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 7);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 8);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 9);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 10);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 11);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 12);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 13);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 14);
+        hash = ((hash << 5) + hash) + vgetq_lane_u8(chunk, 15);
     }
 #endif
 

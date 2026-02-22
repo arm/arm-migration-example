@@ -1,0 +1,20 @@
+---
+id: 91fac107-5690-4d99-aa24-ace186343868
+timestamp: '2026-02-22T18:42:22.651548+00:00'
+tool: migrate_ease_scan
+args:
+  scanner: cpp
+  arch: armv8-a
+  git_repo: null
+  output_format: json
+  extra_args: null
+reason: Scanning the codebase for x86-specific C++ code and SIMD intrinsics to identify
+  migration targets.
+---
+id: cc569271-e913-40b5-a00c-80cd4b99d06f
+timestamp: '2026-02-22T18:43:44.211405+00:00'
+tool: knowledge_base_search
+args:
+  query: _mm_movemask_epi8 NEON equivalent
+reason: Finding the best NEON equivalent for _mm_movemask_epi8 to implement string
+  search efficiently.

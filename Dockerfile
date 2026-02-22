@@ -16,15 +16,26 @@ COPY *.h ./
 COPY *.cpp ./
 
 # Build the application with optimizations
-# SSE2 intrinsics are used in the code for x86-64 platforms
-RUN g++ -O2 -o benchmark \
-    main.cpp \
-    matrix_operations.cpp \
-    hash_operations.cpp \
-    string_search.cpp \
-    memory_operations.cpp \
-    polynomial_eval.cpp \
-    -std=c++11
+# SSE2 intrinsics are used for x86-64, NEON for ARM64
+RUN if [ "$(uname -m)" = "aarch64" ]; then \
+        g++ -O2 -march=armv8-a -o benchmark \
+            main.cpp \
+            matrix_operations.cpp \
+            hash_operations.cpp \
+            string_search.cpp \
+            memory_operations.cpp \
+            polynomial_eval.cpp \
+            -std=c++11; \
+    else \
+        g++ -O2 -o benchmark \
+            main.cpp \
+            matrix_operations.cpp \
+            hash_operations.cpp \
+            string_search.cpp \
+            memory_operations.cpp \
+            polynomial_eval.cpp \
+            -std=c++11; \
+    fi
 
 # Create a startup script
 COPY start.sh .
