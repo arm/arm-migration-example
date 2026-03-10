@@ -4,7 +4,7 @@
 #include <vector>
 
 // Vectorized polynomial evaluation using x86 SSE2
-double polynomial_eval_sse(double x, const std::vector<double>& coeffs);
+double polynomial_eval_simd(double x, const std::vector<double>& coeffs);
 
 // Benchmark function
 void benchmark_polynomial();
