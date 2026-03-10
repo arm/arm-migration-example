@@ -9,6 +9,13 @@
 #define USE_X86_SIMD 0
 #endif
 
+#ifdef __aarch64__
+#include <arm_neon.h>
+#define USE_ARM_NEON 1
+#else
+#define USE_ARM_NEON 0
+#endif
+
 int simd_string_search(const std::string& text, const std::string& pattern) {
     int count = 0;
     size_t text_len = text.length();
@@ -44,9 +51,35 @@ int simd_string_search(const std::string& text, const std::string& pattern) {
             }
         }
     }
+#elif USE_ARM_NEON
+    // AArch64 optimized path using NEON
+    uint8x16_t first_char_vec = vdupq_n_u8(static_cast<uint8_t>(first_char));
+
+    for (; i + 16 <= text_len - pattern_len + 1; i += 16) {
+        uint8x16_t text_chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(text.data() + i));
+        uint8x16_t cmp = vceqq_u8(text_chunk, first_char_vec);
+
+        // Store comparison result as a byte array (0xFF = match, 0x00 = no match)
+        uint8_t cmp_bytes[16];
+        vst1q_u8(cmp_bytes, cmp);
+
+        // Check each potential match position
+        for (int bit = 0; bit < 16 && i + bit <= text_len - pattern_len; bit++) {
+            if (cmp_bytes[bit]) {
+                bool match = true;
+                for (size_t j = 1; j < pattern_len; j++) {
+                    if (text[i + bit + j] != pattern[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) count++;
+            }
+        }
+    }
 #endif
 
-    // Handle remaining characters (or all on non-x86)
+    // Handle remaining characters (or all on non-SIMD)
     for (; i <= text_len - pattern_len; i++) {
         bool match = true;
         for (size_t j = 0; j < pattern_len; j++) {

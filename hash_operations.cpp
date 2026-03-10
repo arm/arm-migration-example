@@ -11,6 +11,13 @@
 #define USE_X86_SIMD 0
 #endif
 
+#ifdef __aarch64__
+#include <arm_neon.h>
+#define USE_ARM_NEON 1
+#else
+#define USE_ARM_NEON 0
+#endif
+
 unsigned long long compute_hash(const char* data, size_t len) {
     unsigned long long hash = 5381;
     size_t i = 0;
@@ -31,11 +38,21 @@ unsigned long long compute_hash(const char* data, size_t len) {
             hash = ((hash << 5) + hash) + byte;
         }
     }
+#elif USE_ARM_NEON
+    // AArch64 optimized path using NEON: load 16 bytes at a time
+    for (; i + 16 <= len; i += 16) {
+        uint8x16_t chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(data + i));
+        uint8_t bytes[16];
+        vst1q_u8(bytes, chunk);
+        for (int j = 0; j < 16; j++) {
+            hash = ((hash << 5) + hash) + bytes[j];
+        }
+    }
 #endif
 
-    // Process remaining bytes (or all bytes on non-x86)
+    // Process remaining bytes (or all bytes on non-SIMD)
     for (; i < len; i++) {
-        hash = ((hash << 5) + hash) + data[i];
+        hash = ((hash << 5) + hash) + static_cast<unsigned char>(data[i]);
     }
 
     return hash;
