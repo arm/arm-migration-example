@@ -2,11 +2,11 @@
 #include <iostream>
 #include <chrono>
 
-#ifdef __x86_64__
-#include <immintrin.h>
-#define USE_X86_SIMD 1
+#ifdef __aarch64__
+#include <arm_neon.h>
+#define USE_ARM_NEON 1
 #else
-#define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
 #endif
 
 int simd_string_search(const std::string& text, const std::string& pattern) {
@@ -21,18 +21,21 @@ int simd_string_search(const std::string& text, const std::string& pattern) {
     const char first_char = pattern[0];
     size_t i = 0;
 
-#if USE_X86_SIMD
-    // x86-64 optimized path using SSE2
-    __m128i first_char_vec = _mm_set1_epi8(first_char);
+#if USE_ARM_NEON
+    // ARM64 optimized path using NEON
+    uint8x16_t first_char_vec = vdupq_n_u8(static_cast<uint8_t>(first_char));
 
     for (; i + 16 <= text_len - pattern_len + 1; i += 16) {
-        __m128i text_chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(text.data() + i));
-        __m128i cmp = _mm_cmpeq_epi8(text_chunk, first_char_vec);
-        int mask = _mm_movemask_epi8(cmp);
+        uint8x16_t text_chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(text.data() + i));
+        uint8x16_t cmp = vceqq_u8(text_chunk, first_char_vec);
+
+        // Store comparison result to array to avoid variable lane index
+        uint8_t cmp_bytes[16];
+        vst1q_u8(cmp_bytes, cmp);
 
         // Check each potential match
         for (int bit = 0; bit < 16 && i + bit <= text_len - pattern_len; bit++) {
-            if (mask & (1 << bit)) {
+            if (cmp_bytes[bit] != 0) {
                 bool match = true;
                 for (size_t j = 1; j < pattern_len; j++) {
                     if (text[i + bit + j] != pattern[j]) {
@@ -46,7 +49,7 @@ int simd_string_search(const std::string& text, const std::string& pattern) {
     }
 #endif
 
-    // Handle remaining characters (or all on non-x86)
+    // Handle remaining characters (or all on non-ARM)
     for (; i <= text_len - pattern_len; i++) {
         bool match = true;
         for (size_t j = 0; j < pattern_len; j++) {

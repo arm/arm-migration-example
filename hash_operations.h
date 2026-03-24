@@ -3,7 +3,7 @@
 
 #include <cstddef>
 
-// Hash computation using x86 SSE2 for parallel processing
+// Hash computation using ARM NEON for parallel processing
 unsigned long long compute_hash(const char* data, size_t len);
 
 // Benchmark function

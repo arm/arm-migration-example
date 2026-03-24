@@ -4,36 +4,32 @@
 #include <chrono>
 #include <iomanip>
 
-#ifdef __x86_64__
-#include <immintrin.h>
-#define USE_X86_SIMD 1
+#ifdef __aarch64__
+#include <arm_neon.h>
+#define USE_ARM_NEON 1
 #else
-#define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
 #endif
 
 unsigned long long compute_hash(const char* data, size_t len) {
     unsigned long long hash = 5381;
     size_t i = 0;
 
-#if USE_X86_SIMD
-    // x86-64 optimized path using SSE2
+#if USE_ARM_NEON
+    // ARM64 optimized path using NEON
     for (; i + 16 <= len; i += 16) {
-        __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + i));
+        uint8x16_t chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(data + i));
 
-        // Extract bytes and update hash
+        // Store to array and update hash byte by byte
+        uint8_t bytes[16];
+        vst1q_u8(bytes, chunk);
         for (int j = 0; j < 16; j++) {
-            unsigned char byte = _mm_extract_epi16(chunk, j / 2);
-            if (j % 2 == 0) {
-                byte = byte & 0xFF;
-            } else {
-                byte = (byte >> 8) & 0xFF;
-            }
-            hash = ((hash << 5) + hash) + byte;
+            hash = ((hash << 5) + hash) + bytes[j];
         }
     }
 #endif
 
-    // Process remaining bytes (or all bytes on non-x86)
+    // Process remaining bytes (or all bytes on non-ARM)
     for (; i < len; i++) {
         hash = ((hash << 5) + hash) + data[i];
     }
