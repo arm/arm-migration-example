@@ -3,11 +3,11 @@
 #include <vector>
 #include <chrono>
 
-#ifdef __x86_64__
-#include <immintrin.h>
-#define USE_X86_SIMD 1
+#ifdef __aarch64__
+#include <arm_neon.h>
+#define USE_ARM_NEON 1
 #else
-#define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
 #endif
 
 void fast_memcpy(void* dest, const void* src, size_t n) {
@@ -15,15 +15,15 @@ void fast_memcpy(void* dest, const void* src, size_t n) {
     const char* s = static_cast<const char*>(src);
     size_t i = 0;
 
-#if USE_X86_SIMD
-    // x86-64 optimized path using SSE2
+#if USE_ARM_NEON
+    // ARM64 optimized path using NEON
     for (; i + 16 <= n; i += 16) {
-        __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(s + i));
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(d + i), chunk);
+        uint8x16_t chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(s + i));
+        vst1q_u8(reinterpret_cast<uint8_t*>(d + i), chunk);
     }
 #endif
 
-    // Copy remaining bytes (or all on non-x86)
+    // Copy remaining bytes (or all on non-ARM)
     for (; i < n; i++) {
         d[i] = s[i];
     }

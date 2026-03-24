@@ -2,40 +2,37 @@
 #include <iostream>
 #include <chrono>
 
-#ifdef __x86_64__
-#include <immintrin.h>
-#define USE_X86_SIMD 1
+#ifdef __aarch64__
+#include <arm_neon.h>
+#define USE_ARM_NEON 1
 #else
-#define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
 #endif
 
 double polynomial_eval_sse(double x, const std::vector<double>& coeffs) {
-#if USE_X86_SIMD
-    // x86-64 optimized path using SSE2
-    __m128d result_vec = _mm_setzero_pd();
-    __m128d x_vec = _mm_set1_pd(x);
-    __m128d power_vec = _mm_set_pd(x, 1.0);  // [x, 1.0]
-    __m128d power_mult = _mm_set1_pd(x * x);
+#if USE_ARM_NEON
+    // ARM64 optimized path using NEON
+    float64x2_t result_vec = vdupq_n_f64(0.0);
+    double init[2] = {1.0, x};
+    float64x2_t power_vec = vld1q_f64(init);
+    float64x2_t power_mult = vdupq_n_f64(x * x);
 
     size_t i = 0;
 
     // Process 2 coefficients at a time
     for (; i + 1 < coeffs.size(); i += 2) {
-        __m128d coeff_vec = _mm_set_pd(coeffs[i + 1], coeffs[i]);
-        __m128d term = _mm_mul_pd(coeff_vec, power_vec);
-        result_vec = _mm_add_pd(result_vec, term);
-        power_vec = _mm_mul_pd(power_vec, power_mult);
+        float64x2_t coeff_vec = vld1q_f64(&coeffs[i]);
+        result_vec = vaddq_f64(result_vec, vmulq_f64(coeff_vec, power_vec));
+        power_vec = vmulq_f64(power_vec, power_mult);
     }
 
     // Horizontal add
-    double result_arr[2];
-    _mm_storeu_pd(result_arr, result_vec);
-    double result = result_arr[0] + result_arr[1];
+    double result = vaddvq_f64(result_vec);
 
     // Handle remaining coefficient
     if (i < coeffs.size()) {
         double power_arr[2];
-        _mm_storeu_pd(power_arr, power_vec);
+        vst1q_f64(power_arr, power_vec);
         result += coeffs[i] * power_arr[0];
     }
 

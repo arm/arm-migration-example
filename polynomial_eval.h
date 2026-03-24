@@ -3,7 +3,7 @@
 
 #include <vector>
 
-// Vectorized polynomial evaluation using x86 SSE2
+// Vectorized polynomial evaluation using ARM NEON
 double polynomial_eval_sse(double x, const std::vector<double>& coeffs);
 
 // Benchmark function

@@ -4,7 +4,7 @@
 #include <vector>
 #include <cstddef>
 
-// Matrix class with x86 SSE2 optimizations
+// Matrix class with ARM NEON optimizations
 class Matrix {
 private:
     std::vector<std::vector<double>> data;

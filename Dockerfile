@@ -16,8 +16,8 @@ COPY *.h ./
 COPY *.cpp ./
 
 # Build the application with optimizations
-# SSE2 intrinsics are used in the code for x86-64 platforms
-RUN g++ -O2 -o benchmark \
+# NEON intrinsics are used in the code for ARM64 (aarch64) platforms
+RUN g++ -O2 -march=armv8-a -o benchmark \
     main.cpp \
     matrix_operations.cpp \
     hash_operations.cpp \
