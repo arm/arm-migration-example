@@ -5,8 +5,50 @@
 #ifdef __x86_64__
 #include <immintrin.h>
 #define USE_X86_SIMD 1
+#define USE_ARM_NEON 0
+#elif defined(__aarch64__)
+#include <arm_neon.h>
+#define USE_X86_SIMD 0
+#define USE_ARM_NEON 1
 #else
 #define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
+#endif
+
+#if USE_ARM_NEON
+// ---------------------------------------------------------------------------
+// neon_movemask_epi8 – NEON equivalent of _mm_movemask_epi8
+//
+// _mm_movemask_epi8 collects the MSB of every byte into a 16-bit integer.
+// NEON has no direct single instruction for this.  The approach below uses
+// a power-of-2 byte mask, pairwise addition (vpadd_u8), and lane extraction:
+//
+//   1. AND each byte with its unique power-of-2  (1,2,4,8,16,32,64,128 × 2)
+//      → each byte now holds its bit value or 0
+//   2. Three rounds of vpadd_u8 sum pairs of bytes; because the powers are
+//      non-overlapping bits there is never a carry, so addition == OR.
+//   3. After three rounds lane 0 = lower 8 mask bits, lane 1 = upper 8 bits.
+// ---------------------------------------------------------------------------
+static inline uint32_t neon_movemask_epi8(uint8x16_t v) {
+    // Assign a unique power-of-2 to each byte position within each group of 8
+    const uint8x16_t bit_mask = {
+        1, 2, 4, 8, 16, 32, 64, 128,   // bits 0-7
+        1, 2, 4, 8, 16, 32, 64, 128    // bits 8-15
+    };
+    // Keep only the "is set" bit for each lane
+    uint8x16_t masked = vandq_u8(v, bit_mask);
+
+    uint8x8_t lo = vget_low_u8(masked);   // byte positions 0-7
+    uint8x8_t hi = vget_high_u8(masked);  // byte positions 8-15
+
+    // Pairwise-sum three times: 8 elements → 4 → 2 → 1 per group
+    lo = vpadd_u8(lo, hi);   // {bits0-7 pairs…, bits8-15 pairs…}
+    lo = vpadd_u8(lo, lo);   // {bits0-7 quads…, bits8-15 quads…}
+    lo = vpadd_u8(lo, lo);   // {all lower 8 bits, all upper 8 bits, …}
+
+    return (uint32_t)vget_lane_u8(lo, 0) |
+           ((uint32_t)vget_lane_u8(lo, 1) << 8);
+}
 #endif
 
 int simd_string_search(const std::string& text, const std::string& pattern) {
@@ -33,6 +75,34 @@ int simd_string_search(const std::string& text, const std::string& pattern) {
         // Check each potential match
         for (int bit = 0; bit < 16 && i + bit <= text_len - pattern_len; bit++) {
             if (mask & (1 << bit)) {
+                bool match = true;
+                for (size_t j = 1; j < pattern_len; j++) {
+                    if (text[i + bit + j] != pattern[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) count++;
+            }
+        }
+    }
+#elif USE_ARM_NEON
+    // ARM64 optimized path using NEON
+    // _mm_set1_epi8(c)       ->  vdupq_n_u8(c)
+    // _mm_loadu_si128(ptr)   ->  vld1q_u8(ptr)
+    // _mm_cmpeq_epi8(a, b)   ->  vceqq_u8(a, b)   (returns 0xFF / 0x00 per byte)
+    // _mm_movemask_epi8(v)   ->  neon_movemask_epi8(v)  (see helper above)
+    uint8x16_t first_char_vec = vdupq_n_u8(static_cast<uint8_t>(first_char));
+
+    for (; i + 16 <= text_len - pattern_len + 1; i += 16) {
+        uint8x16_t text_chunk = vld1q_u8(
+            reinterpret_cast<const uint8_t*>(text.data() + i));
+        uint8x16_t cmp = vceqq_u8(text_chunk, first_char_vec);
+        uint32_t mask = neon_movemask_epi8(cmp);
+
+        // Check each potential match — identical logic to the SSE2 path
+        for (int bit = 0; bit < 16 && i + bit <= text_len - pattern_len; bit++) {
+            if (mask & (1u << bit)) {
                 bool match = true;
                 for (size_t j = 1; j < pattern_len; j++) {
                     if (text[i + bit + j] != pattern[j]) {
