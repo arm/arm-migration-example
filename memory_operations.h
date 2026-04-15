@@ -3,7 +3,7 @@
 
 #include <cstddef>
 
-// Fast memory copy using x86 SSE2
+// Fast memory copy using x86 SSE2 / ARM NEON
 void fast_memcpy(void* dest, const void* src, size_t n);
 
 // Benchmark function

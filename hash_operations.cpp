@@ -7,8 +7,14 @@
 #ifdef __x86_64__
 #include <immintrin.h>
 #define USE_X86_SIMD 1
+#define USE_ARM_NEON 0
+#elif defined(__aarch64__)
+#include <arm_neon.h>
+#define USE_X86_SIMD 0
+#define USE_ARM_NEON 1
 #else
 #define USE_X86_SIMD 0
+#define USE_ARM_NEON 0
 #endif
 
 unsigned long long compute_hash(const char* data, size_t len) {
@@ -17,18 +23,30 @@ unsigned long long compute_hash(const char* data, size_t len) {
 
 #if USE_X86_SIMD
     // x86-64 optimized path using SSE2
+    // NOTE: _mm_extract_epi16(chunk, j/2) with a *variable* lane index is
+    // illegal — GCC and Clang both require a compile-time constant.
+    // Use _mm_storeu_si128 to dump the vector to a local byte array instead;
+    // this is equally fast and avoids the undefined-behaviour / compile error.
     for (; i + 16 <= len; i += 16) {
         __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + i));
-
-        // Extract bytes and update hash
+        unsigned char bytes[16];
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(bytes), chunk);
         for (int j = 0; j < 16; j++) {
-            unsigned char byte = _mm_extract_epi16(chunk, j / 2);
-            if (j % 2 == 0) {
-                byte = byte & 0xFF;
-            } else {
-                byte = (byte >> 8) & 0xFF;
-            }
-            hash = ((hash << 5) + hash) + byte;
+            hash = ((hash << 5) + hash) + bytes[j];
+        }
+    }
+#elif USE_ARM_NEON
+    // ARM64 optimized path using NEON
+    // _mm_loadu_si128  ->  vld1q_u8
+    // _mm_extract_epi16(chunk, j/2) with a *variable* lane index is illegal in NEON
+    // (NEON lane indices must be compile-time constants). Instead, store the
+    // 16-byte vector to a local array and read each byte — equivalent performance.
+    for (; i + 16 <= len; i += 16) {
+        uint8_t bytes[16];
+        uint8x16_t chunk = vld1q_u8(reinterpret_cast<const uint8_t*>(data + i));
+        vst1q_u8(bytes, chunk);   // vst1q_u8 replaces _mm_storeu_si128
+        for (int j = 0; j < 16; j++) {
+            hash = ((hash << 5) + hash) + bytes[j];
         }
     }
 #endif

@@ -15,8 +15,12 @@ COPY *.h ./
 # Copy all C++ source files
 COPY *.cpp ./
 
-# Build the application with optimizations
-# SSE2 intrinsics are used in the code for x86-64 platforms
+# Build the application with optimizations.
+# The code detects the target architecture at compile time:
+#   x86-64  -> SSE2 SIMD path  (#ifdef __x86_64__)
+#   ARM64   -> NEON SIMD path  (#ifdef __aarch64__)
+# ubuntu:22.04 is a multi-arch manifest image (amd64 + arm64), so this
+# Dockerfile builds correctly on both platforms without any changes.
 RUN g++ -O2 -o benchmark \
     main.cpp \
     matrix_operations.cpp \

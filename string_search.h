@@ -3,7 +3,7 @@
 
 #include <string>
 
-// SIMD-accelerated string search using x86 SSE2
+// SIMD-accelerated string search using x86 SSE2 / ARM NEON
 int simd_string_search(const std::string& text, const std::string& pattern);
 
 // Benchmark function
