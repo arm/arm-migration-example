@@ -19,8 +19,7 @@ double polynomial_eval_sse(double x, const std::vector<double>& coeffs) {
 #if USE_X86_SIMD
     // x86-64 optimized path using SSE2
     __m128d result_vec = _mm_setzero_pd();
-    __m128d x_vec = _mm_set1_pd(x);
-    __m128d power_vec = _mm_set_pd(x, 1.0);  // [x, 1.0]
+    __m128d power_vec = _mm_set_pd(x, 1.0);  // lane 0 = 1.0, lane 1 = x
     __m128d power_mult = _mm_set1_pd(x * x);
 
     size_t i = 0;
@@ -62,7 +61,6 @@ double polynomial_eval_sse(double x, const std::vector<double>& coeffs) {
     //   horizontal add       ->  vgetq_lane_f64(v,0) + vgetq_lane_f64(v,1)
 
     float64x2_t result_vec = vdupq_n_f64(0.0);
-    (void)vdupq_n_f64(x);  // x_vec not needed beyond power_vec initialisation
     // _mm_set_pd(x, 1.0) → lane 0 = 1.0, lane 1 = x
     double pv_init[2] = {1.0, x};
     float64x2_t power_vec  = vld1q_f64(pv_init);
